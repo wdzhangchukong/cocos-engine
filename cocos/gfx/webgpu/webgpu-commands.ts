@@ -1371,6 +1371,94 @@ export function WebGPUCmdFuncCopyTexImagesToTexture (
     }
 }
 
+export const CreateBindGroupLayoutEntry = (
+    type: DescriptorType,
+    binding: number,
+    visibility: ShaderStageFlagBit,
+): GPUBindGroupLayoutEntry[] => {
+    // Define the mapping from ShaderStageFlagBit to GPUShaderStage
+    const gpuVisibility = GFXStageToWebGPUStage(visibility);
+    const entrys: GPUBindGroupLayoutEntry[] = [];
+    const entry: GPUBindGroupLayoutEntry = {
+        binding,
+        visibility: gpuVisibility,
+    };
+    entrys.push(entry);
+    let entrySampler: GPUBindGroupLayoutEntry | null = null;
+    let isTexUnFilter = false;
+    switch (type) {
+    case DescriptorType.UNIFORM_BUFFER:
+    case DescriptorType.DYNAMIC_UNIFORM_BUFFER:
+        entry.buffer = {
+            type: 'uniform',
+            hasDynamicOffset: type === DescriptorType.DYNAMIC_UNIFORM_BUFFER,
+            minBindingSize: undefined,
+        };
+        break;
+
+    case DescriptorType.STORAGE_BUFFER:
+    case DescriptorType.DYNAMIC_STORAGE_BUFFER:
+        entry.buffer = {
+            type: 'storage',
+            hasDynamicOffset: type === DescriptorType.DYNAMIC_STORAGE_BUFFER,
+            minBindingSize: undefined,
+        };
+        break;
+
+    case DescriptorType.SAMPLER_TEXTURE:
+        // Assuming this is a combined image sampler
+        entry.texture = {
+            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension: '2d', // or 'cube', '3d', '1d'
+            multisampled: false,
+        };
+        isTexUnFilter = entry.texture.sampleType === 'unfilterable-float';
+        entrySampler = {
+            binding: binding + SEPARATE_SAMPLER_BINDING_OFFSET,
+            visibility: gpuVisibility,
+        };
+        entrySampler.sampler = {
+            type: isTexUnFilter ? 'non-filtering' : 'filtering', // or 'non-filtering', 'comparison'
+        };
+        entrys.push(entrySampler);
+        break;
+
+    case DescriptorType.SAMPLER:
+        entry.sampler = {
+            type: 'filtering', // or 'non-filtering', 'comparison'
+        };
+        break;
+
+    case DescriptorType.TEXTURE:
+        entry.texture = {
+            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension: '2d', // or 'cube', '3d', '1d'
+            multisampled: false,
+        };
+        break;
+
+    case DescriptorType.STORAGE_IMAGE:
+        entry.storageTexture = {
+            access: 'read-only', // or 'read-only', 'read-write'
+            format: 'rgba8unorm', // Choose the appropriate texture format
+            viewDimension: '2d', // or 'cube', '3d', '1d'
+        };
+        break;
+
+    case DescriptorType.INPUT_ATTACHMENT:
+        entry.texture = {
+            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension: '2d', // or 'cube', '3d', '1d'
+            multisampled: false,
+        };
+        break;
+
+    default:
+        throw new Error(`Unsupported descriptor type: ${type}`);
+    }
+    return entrys;
+};
+
 export function TextureSampleTypeTrait (format: Format): GPUTextureSampleType {
     // See https://gpuweb.github.io/gpuweb/#texture-format-caps
     switch (format) {
