@@ -1137,7 +1137,7 @@ export class WebPipeline implements BasicPipeline {
     public getGlobalDescriptorSetData (): DescriptorSetData | undefined {
         const stageId = this.layoutGraph.locateChild(this.layoutGraph.N, 'default');
         const layout = this.layoutGraph.getLayout(stageId);
-        const layoutData = layout.descriptorSets.get(UpdateFrequency.PER_PASS);
+        const layoutData: DescriptorSetData | undefined = layout.getSet(UpdateFrequency.PER_PASS);
         return layoutData;
     }
 
@@ -1639,8 +1639,8 @@ export class WebPipeline implements BasicPipeline {
         const lg = this._layoutGraph;
         const phaseID = lg.shaderLayoutIndex.get(shaderName)!;
         const pplLayout = lg.getLayout(phaseID);
-        const setLayout = pplLayout.descriptorSets.get(freq)!;
-        return setLayout.descriptorSetLayout!;
+        const setLayout = pplLayout.getSet(freq)!;
+        return setLayout.descriptorSetLayout as DescriptorSetLayout;
     }
     get renderGraph (): RenderGraph | null {
         return this._renderGraph;
