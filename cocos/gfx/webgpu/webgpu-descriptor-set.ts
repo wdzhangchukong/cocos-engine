@@ -191,10 +191,6 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                         // texture
                         const currTex = (this._textures[i] || device.defaultResource.texture) as WebGPUTexture;
                         this._bindTextureEntry(binding, currTex);
-                        if (currTex.gpuTexture.gpuTarget === 'cube') {
-                            // eslint-disable-next-line no-console
-                            console.log(binding);
-                        }
                     }
 
                     if (!((descType & DescriptorType.STORAGE_IMAGE) === DescriptorType.STORAGE_IMAGE
