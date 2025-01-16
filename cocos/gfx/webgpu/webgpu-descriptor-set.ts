@@ -27,7 +27,7 @@ import { WebGPUBuffer } from './webgpu-buffer';
 import { IWebGPUGPUDescriptorSet, IWebGPUGPUDescriptor, IWebGPUGPUBuffer } from './webgpu-gpu-objects';
 import { WebGPUSampler } from './webgpu-sampler';
 import { WebGPUTexture } from './webgpu-texture';
-import { FormatToWGPUFormatType, WebGPUDescriptorSetLayout } from './webgpu-descriptor-set-layout';
+import { WebGPUDescriptorSetLayout } from './webgpu-descriptor-set-layout';
 import {
     DescriptorSetInfo,
     DESCRIPTOR_BUFFER_TYPE,
@@ -38,7 +38,7 @@ import {
     Filter,
 } from '../base/define';
 import { DescUpdateFrequency, WebGPUDeviceManager, isBound } from './define';
-import { SEPARATE_SAMPLER_BINDING_OFFSET } from './webgpu-commands';
+import { FormatToWGPUFormatType, SEPARATE_SAMPLER_BINDING_OFFSET } from './webgpu-commands';
 
 export class WebGPUDescriptorSet extends DescriptorSet {
     get gpuDescriptorSet (): IWebGPUGPUDescriptorSet {
@@ -191,6 +191,10 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                         // texture
                         const currTex = (this._textures[i] || device.defaultResource.texture) as WebGPUTexture;
                         this._bindTextureEntry(binding, currTex);
+                        if (currTex.gpuTexture.gpuTarget === 'cube') {
+                            // eslint-disable-next-line no-console
+                            console.log(binding);
+                        }
                     }
 
                     if (!((descType & DescriptorType.STORAGE_IMAGE) === DescriptorType.STORAGE_IMAGE

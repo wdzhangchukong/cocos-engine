@@ -42,6 +42,7 @@ import {
     formatAlignment,
     alignTo,
     TextureFlagBit,
+    DescriptorSetLayoutBinding,
 } from '../base/define';
 
 import { WebGPUCommandAllocator } from './webgpu-command-allocator';
@@ -1371,13 +1372,39 @@ export function WebGPUCmdFuncCopyTexImagesToTexture (
     }
 }
 
-export const CreateBindGroupLayoutEntry = (
-    type: DescriptorType,
-    binding: number,
-    visibility: ShaderStageFlagBit,
-): GPUBindGroupLayoutEntry[] => {
+const GFXSampleTypeToGPUTextureSampleType: GPUTextureSampleType[] = [
+    'float',
+    'unfilterable-float',
+    'sint',
+    'uint',
+];
+
+const GFXViewDimensionToGPUViewDimension: GPUTextureViewDimension[] = [
+    '2d',
+    '2d',
+    '1d',
+    '1d',
+    '2d',
+    '2d-array',
+    '2d',
+    '2d-array',
+    '3d',
+    'cube',
+    'cube-array',
+    '2d',
+];
+
+const GFXMemoryAccessToGPUStorageTextureAccess: (GPUStorageTextureAccess | undefined)[] = [
+    'read-only',
+    'read-only',
+    'write-only',
+    'read-write',
+];
+
+export function CreateBindGroupLayoutEntry (currBind: DescriptorSetLayoutBinding): GPUBindGroupLayoutEntry[] {
+    const binding = currBind.binding;
     // Define the mapping from ShaderStageFlagBit to GPUShaderStage
-    const gpuVisibility = GFXStageToWebGPUStage(visibility);
+    const gpuVisibility = GFXStageToWebGPUStage(currBind.stageFlags);
     const entrys: GPUBindGroupLayoutEntry[] = [];
     const entry: GPUBindGroupLayoutEntry = {
         binding,
@@ -1385,7 +1412,11 @@ export const CreateBindGroupLayoutEntry = (
     };
     entrys.push(entry);
     let entrySampler: GPUBindGroupLayoutEntry | null = null;
-    let isTexUnFilter = false;
+    const samplerType = GFXSampleTypeToGPUTextureSampleType[currBind.sampleType];
+    const isTexUnFilter = samplerType === 'unfilterable-float';
+    const viewDimension = GFXViewDimensionToGPUViewDimension[currBind.viewDimension];
+    const type = currBind.descriptorType;
+    const multisampled = currBind.viewDimension > 5 && currBind.viewDimension < 8;
     switch (type) {
     case DescriptorType.UNIFORM_BUFFER:
     case DescriptorType.DYNAMIC_UNIFORM_BUFFER:
@@ -1408,11 +1439,10 @@ export const CreateBindGroupLayoutEntry = (
     case DescriptorType.SAMPLER_TEXTURE:
         // Assuming this is a combined image sampler
         entry.texture = {
-            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
-            viewDimension: '2d', // or 'cube', '3d', '1d'
-            multisampled: false,
+            sampleType: samplerType, // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension, // or 'cube', '3d', '1d'
+            multisampled,
         };
-        isTexUnFilter = entry.texture.sampleType === 'unfilterable-float';
         entrySampler = {
             binding: binding + SEPARATE_SAMPLER_BINDING_OFFSET,
             visibility: gpuVisibility,
@@ -1425,31 +1455,31 @@ export const CreateBindGroupLayoutEntry = (
 
     case DescriptorType.SAMPLER:
         entry.sampler = {
-            type: 'filtering', // or 'non-filtering', 'comparison'
+            type: isTexUnFilter ? 'non-filtering' : 'filtering', // or 'non-filtering', 'comparison'
         };
         break;
 
     case DescriptorType.TEXTURE:
         entry.texture = {
-            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
-            viewDimension: '2d', // or 'cube', '3d', '1d'
-            multisampled: false,
+            sampleType: samplerType, // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension, // or 'cube', '3d', '1d'
+            multisampled,
         };
         break;
 
     case DescriptorType.STORAGE_IMAGE:
         entry.storageTexture = {
-            access: 'read-only', // or 'read-only', 'read-write'
-            format: 'rgba8unorm', // Choose the appropriate texture format
-            viewDimension: '2d', // or 'cube', '3d', '1d'
+            access: GFXMemoryAccessToGPUStorageTextureAccess[currBind.access], // or 'read-only', 'read-write'
+            format: GFXFormatToWGPUFormat(currBind.format), // Choose the appropriate texture format
+            viewDimension, // or 'cube', '3d', '1d'
         };
         break;
 
     case DescriptorType.INPUT_ATTACHMENT:
         entry.texture = {
-            sampleType: 'float', // or 'unfilterable-float', 'depth', 'sint', 'uint'
-            viewDimension: '2d', // or 'cube', '3d', '1d'
-            multisampled: false,
+            sampleType: samplerType, // or 'unfilterable-float', 'depth', 'sint', 'uint'
+            viewDimension, // or 'cube', '3d', '1d'
+            multisampled,
         };
         break;
 
@@ -1457,7 +1487,7 @@ export const CreateBindGroupLayoutEntry = (
         throw new Error(`Unsupported descriptor type: ${type}`);
     }
     return entrys;
-};
+}
 
 export function TextureSampleTypeTrait (format: Format): GPUTextureSampleType {
     // See https://gpuweb.github.io/gpuweb/#texture-format-caps
@@ -1506,6 +1536,13 @@ export function TextureSampleTypeTrait (format: Format): GPUTextureSampleType {
         warn('Unsupported texture sample type yet. Please refer to the documentation for supported formats.');
         return 'float';
     }
+}
+
+export function FormatToWGPUFormatType (format: Format): GPUTextureSampleType {
+    if (format === Format.DEPTH_STENCIL) {
+        return 'unfilterable-float';
+    }
+    return TextureSampleTypeTrait(format);
 }
 
 interface MipmapPassData {

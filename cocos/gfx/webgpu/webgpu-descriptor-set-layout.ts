@@ -40,13 +40,6 @@ import { DescriptorSet } from '../base/descriptor-set';
 import { WebGPUBuffer } from './webgpu-buffer';
 import { WebGPUSampler } from './webgpu-sampler';
 
-export function FormatToWGPUFormatType (format: Format): GPUTextureSampleType {
-    if (format === Format.DEPTH_STENCIL) {
-        return 'unfilterable-float';
-    }
-    return TextureSampleTypeTrait(format);
-}
-
 export class WebGPUDescriptorSetLayout extends DescriptorSetLayout {
     get gpuDescriptorSetLayout (): IWebGPUGPUDescriptorSetLayout | null { return this._gpuDescriptorSetLayout!; }
 
@@ -111,9 +104,7 @@ export class WebGPUDescriptorSetLayout extends DescriptorSetLayout {
         this._bindings.forEach((binding) => {
             bindGrpLayoutEntries.push(
                 ...CreateBindGroupLayoutEntry(
-                    binding.descriptorType,
-                    binding.binding,
-                    binding.stageFlags,
+                    binding,
                 ),
             );
         });
