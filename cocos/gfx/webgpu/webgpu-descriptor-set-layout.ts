@@ -24,7 +24,7 @@
 
 import { DescriptorSetLayout } from '../base/descriptor-set-layout';
 import { IWebGPUGPUDescriptorSetLayout } from './webgpu-gpu-objects';
-import { CreateBindGroupLayoutEntry as createBindGroupLayoutEntry } from './webgpu-commands';
+import { createBindGroupLayoutEntry } from './webgpu-commands';
 import {
     DescriptorSetLayoutInfo,
     DESCRIPTOR_DYNAMIC_TYPE,

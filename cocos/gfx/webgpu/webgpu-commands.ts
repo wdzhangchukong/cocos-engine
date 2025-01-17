@@ -1401,7 +1401,7 @@ const GFXMemoryAccessToGPUStorageTextureAccess: (GPUStorageTextureAccess | undef
     'read-write',
 ];
 
-export function CreateBindGroupLayoutEntry (currBind: DescriptorSetLayoutBinding): GPUBindGroupLayoutEntry[] {
+export function createBindGroupLayoutEntry (currBind: DescriptorSetLayoutBinding): GPUBindGroupLayoutEntry[] {
     const binding = currBind.binding;
     // Define the mapping from ShaderStageFlagBit to GPUShaderStage
     const gpuVisibility = GFXStageToWebGPUStage(currBind.stageFlags);
