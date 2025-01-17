@@ -1440,7 +1440,7 @@ export function createBindGroupLayoutEntry (currBind: DescriptorSetLayoutBinding
         // Assuming this is a combined image sampler
         entry.texture = {
             sampleType: samplerType, // or 'unfilterable-float', 'depth', 'sint', 'uint'
-            viewDimension, // or 'cube', '3d', '1d'
+            viewDimension, // 2d or 'cube', '3d', '1d'
             multisampled,
         };
         entrySampler = {

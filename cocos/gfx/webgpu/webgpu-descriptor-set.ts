@@ -35,6 +35,7 @@ import {
     DescriptorSetLayoutBinding,
     DescriptorType,
     Filter,
+    ViewDimension,
 } from '../base/define';
 import { WebGPUDeviceManager } from './define';
 import { FormatToWGPUFormatType, SEPARATE_SAMPLER_BINDING_OFFSET } from './webgpu-commands';
@@ -180,7 +181,14 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                     const descType = descriptors[i].type;
                     if ((descType & DescriptorType.SAMPLER) !== DescriptorType.SAMPLER) {
                         // texture
-                        const currTex = (this._textures[i] || device.defaultResource.texture) as WebGPUTexture;
+                        let currTex = this._textures[i]!;
+                        if (!currTex) {
+                            if (binding.viewDimension === ViewDimension.TEXCUBE) {
+                                currTex = device.defaultResource.cubeTexture;
+                            } else {
+                                currTex = device.defaultResource.texture;
+                            }
+                        }
                         this._bindTextureEntry(binding, currTex);
                     }
 
