@@ -38,7 +38,6 @@ import {
     Viewport,
     Filter,
     TextureBlit,
-    ShaderStageFlagBit,
     DescriptorSetInfo,
 } from '../base/define';
 import { Framebuffer } from '../base/framebuffer';
@@ -71,12 +70,10 @@ import { INT_MAX } from '../../core/math/bits';
 import { GeneralBarrier } from '../base/states/general-barrier';
 import { TextureBarrier } from '../base/states/texture-barrier';
 import { BufferBarrier } from '../base/states/buffer-barrier';
-import { DescUpdateFrequency, WebGPUDeviceManager } from './define';
+import { WebGPUDeviceManager } from './define';
 import { WebGPUSwapchain } from './webgpu-swapchain';
 import { WebGPUPipelineLayout } from './webgpu-pipeline-layout';
-import { WebGPUDescriptorSetLayout } from './webgpu-descriptor-set-layout';
 import { error, errorID } from '../../core';
-import { SetIndex } from '../../rendering/define';
 
 export interface IWebGPUDepthBias {
     constantFactor: number;
@@ -103,7 +100,7 @@ export interface IWebGPUStencilCompareMask {
 interface CommandEncoder { commandEncoder: GPUCommandEncoder, renderPassEncoder: GPURenderPassEncoder }
 let currPipelineState: WebGPUPipelineState | null = null;
 const descriptorSets: WebGPUDescriptorSet[] = [];
-const groupSets: SetIndex[] = [SetIndex.GLOBAL, SetIndex.MATERIAL, SetIndex.LOCAL];
+const groupSets: number[] = [0, 1, 2];
 const renderAreas: Rect[] = [];
 export class WebGPUCommandBuffer extends CommandBuffer {
     public pipelineBarrier (
@@ -616,21 +613,8 @@ export class WebGPUCommandBuffer extends CommandBuffer {
         if (!this._curGPUPipelineState) {
             return;
         }
-        const gpuShader = this._curGPUPipelineState.gpuShader!;
-        const bindingMaps = gpuShader.bindings;
-        let vertBinds: number[][] = []; let fragBinds: number[][] = []; let vertAttrs;
-        for (const stage of gpuShader.gpuStages) {
-            if (stage.type === ShaderStageFlagBit.VERTEX) {
-                vertBinds = stage.bindings;
-                vertAttrs = stage.attrs;
-            } else if (stage.type === ShaderStageFlagBit.FRAGMENT) {
-                fragBinds = stage.bindings;
-            }
-        }
         const gpuPipelineLayout = this._curGPUPipelineState.gpuPipelineLayout as IWebGPUGPUPipelineLayout;
         const wgpuPipLayout = (currPipelineState?.pipelineLayout as WebGPUPipelineLayout);
-        // const needFetchPipLayout = false;
-        // const descSize = descriptorSets.length;
         for (let i = 0; i < groupSets.length; i++) {
             const currSetIdx = groupSets[i];
             const currDesc = descriptorSets[currSetIdx];
@@ -642,36 +626,8 @@ export class WebGPUCommandBuffer extends CommandBuffer {
                 const newDescSet = WebGPUDeviceManager.instance.createDescriptorSet(currLayoutInfo) as WebGPUDescriptorSet;
                 descriptorSets[currSetIdx] = newDescSet;
                 newDescSet.prepare(true);
-                // this._curGPUDescriptorSets[currSetIdx] = newDescSet.gpuDescriptorSet;
             }
-            // const layout = descriptorSets[i].layout as WebGPUDescriptorSetLayout;
-            // const currGrpLayout = layout.gpuDescriptorSetLayout!.bindGroupLayout;
-            // const notEqualLayout = gpuPipelineLayout.gpuBindGroupLayouts[i] !== currGrpLayout;
-            // if (layout.hasChanged || notEqualLayout) {
-            //     if (notEqualLayout) {
-            //         wgpuPipLayout.changeSetLayout(i, layout);
-            //     }
-            //     layout.resetChanged();
-            //     needFetchPipLayout = true;
-            // }
         }
-
-        // wgpuPipLayout.setLayouts.forEach((layout) => {
-
-        // });
-
-        // groupSets.forEach((val) => {
-        // if (!descriptorSets[val]) {
-        //     descriptorSets[val];
-        // }
-        // });
-
-        // if (needFetchPipLayout || !wgpuPipLayout.gpuPipelineLayout!.nativePipelineLayout
-        //     || this._curGPUPipelineState.pipelineState!.layout !== gpuPipelineLayout.nativePipelineLayout) {
-        //     wgpuPipLayout.fetchPipelineLayout(false);
-        //     this._curWebGPUPipelineState?.updatePipelineLayout();
-        //     needFetchPipLayout = true;
-        // }
         this._curWebGPUPipelineState!.prepare(this._curGPUInputAssembler!);
         const { dynamicOffsetIndices } = gpuPipelineLayout;
         // ----------------------------wgpu pipline state-----------------------------

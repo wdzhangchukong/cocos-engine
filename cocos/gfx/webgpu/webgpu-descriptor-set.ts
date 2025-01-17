@@ -24,7 +24,7 @@
 
 import { DescriptorSet } from '../base/descriptor-set';
 import { WebGPUBuffer } from './webgpu-buffer';
-import { IWebGPUGPUDescriptorSet, IWebGPUGPUDescriptor, IWebGPUGPUBuffer } from './webgpu-gpu-objects';
+import { IWebGPUGPUDescriptorSet, IWebGPUGPUDescriptor } from './webgpu-gpu-objects';
 import { WebGPUSampler } from './webgpu-sampler';
 import { WebGPUTexture } from './webgpu-texture';
 import { WebGPUDescriptorSetLayout } from './webgpu-descriptor-set-layout';
@@ -34,10 +34,9 @@ import {
     DESCRIPTOR_SAMPLER_TYPE,
     DescriptorSetLayoutBinding,
     DescriptorType,
-    ShaderStageFlagBit,
     Filter,
 } from '../base/define';
-import { DescUpdateFrequency, WebGPUDeviceManager, isBound } from './define';
+import { WebGPUDeviceManager } from './define';
 import { FormatToWGPUFormatType, SEPARATE_SAMPLER_BINDING_OFFSET } from './webgpu-commands';
 
 export class WebGPUDescriptorSet extends DescriptorSet {
@@ -87,8 +86,6 @@ export class WebGPUDescriptorSet extends DescriptorSet {
     }
 
     public destroy (): void {
-        // const layout = (this._layout as WebGPUDescriptorSetLayout);// .removeRef(this);
-        // layout.removeRef(this);
         this._layout = null;
         this._gpuDescriptorSet = null;
         this._buffers.length = 0;
@@ -112,20 +109,17 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                 size: buffer.gpuBuffer.size,
             },
         };
-        // layout.updateBindGroupLayout(bind, buffer, null, null);
         this._bindGroupEntries.set(bindGrpEntry.binding, bindGrpEntry);
         buffer.resetChange();
     }
 
     private _bindTextureEntry (bind: DescriptorSetLayoutBinding, texture: WebGPUTexture): void {
         this._gpuDescriptorSet!.gpuDescriptors[bind.binding].gpuTexture = texture.gpuTexture;
-        // const layout = this._layout as WebGPUDescriptorSetLayout;
         const nativeTexView = texture.getNativeTextureView()!;
         const bindGrpEntry: GPUBindGroupEntry = {
             binding: bind.binding,
             resource: nativeTexView,
         };
-        // layout.updateBindGroupLayout(bind, null, texture, null);
         this._bindGroupEntries.set(bindGrpEntry.binding, bindGrpEntry);
         texture.resetChange();
     }
@@ -133,7 +127,6 @@ export class WebGPUDescriptorSet extends DescriptorSet {
     private _bindSamplerEntry (bind: DescriptorSetLayoutBinding, sampler: WebGPUSampler): void {
         const samplerIdx = bind.binding + SEPARATE_SAMPLER_BINDING_OFFSET;
         this._gpuDescriptorSet!.gpuDescriptors[bind.binding].gpuSampler = sampler.gpuSampler;
-        // const layout = this._layout as WebGPUDescriptorSetLayout;
         const device = WebGPUDeviceManager.instance;
         const currTexture = (this._textures[bind.binding] || device.defaultResource.texture) as WebGPUTexture;
         const levelCount = currTexture.levelCount;
@@ -149,7 +142,6 @@ export class WebGPUDescriptorSet extends DescriptorSet {
             binding: samplerIdx,
             resource: currGPUSampler as GPUSampler,
         };
-        // layout.updateBindGroupLayout(bind, null, null, sampler);
         this._bindGroupEntries.set(samplerIdx, bindSamplerGrpEntry);
         sampler.resetChange();
     }
@@ -178,7 +170,6 @@ export class WebGPUDescriptorSet extends DescriptorSet {
             for (let i = 0; i < descCount; ++i) {
                 const binding = bindings[i];
                 const bindIdx = binding.binding;
-                // const isNeedBind = this._isNeedBindFromLayout(bindIdx);
                 if (descriptors[i].type & DESCRIPTOR_BUFFER_TYPE) {
                     const buffer = (this._buffers[i] || device.defaultResource.buffer) as WebGPUBuffer;
                     this._bindBufferEntry(binding, buffer);
@@ -203,29 +194,9 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                 }
             }
             this._isDirty = false;
-            // this._needUpdate = true;
             this._createBindGroup();
         }
     }
-
-    // private _resetPrepareDynOffsets (): void {
-    //     this._prepareDynOffsets.length = 0;
-    //     this._dynamicOffsetNum = 0;
-    // }
-
-    // private _hasIncludeDynamic (): boolean {
-    //     if (!this._dynamicOffsets.length) {
-    //         this._resetPrepareDynOffsets();
-    //         return true;
-    //     }
-    //     for (let i = 0; i < this._bindGroupEntries.keys.length; i++) {
-    //         const entry = this._bindGroupEntries.get(i)!;
-    //         if (this._dynamicOffsets.includes(entry.binding) && !this._prepareDynOffsets.includes(entry.binding)) {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
 
     private _hasResourceChange (bind: number, resource: WebGPUBuffer | WebGPUTexture | WebGPUSampler): boolean {
         if (resource && resource.hasChange) {
@@ -245,62 +216,10 @@ export class WebGPUDescriptorSet extends DescriptorSet {
     }
 
     public prepare (force: boolean = false): void {
-        // set null
-        // const layout = this._layout as WebGPUDescriptorSetLayout;
-        // if (!binds) {
-        //     const device = WebGPUDeviceManager.instance;
-        //     if (!this._bindGroupEntries.size) {
-        //         const gpuSetLayout = device.defaultResource.setLayout as WebGPUDescriptorSetLayout;
-        //         const binding = gpuSetLayout.bindings[0];
-        //         this._bindBufferEntry(binding, device.defaultResource.buffer);
-        //         this._needUpdate = true;
-        //         this.prepare(frequency, [-1]);
-        //     } else {
-        //         this.prepare(frequency, [-1]);
-        //     }
-        //     // this._resetPrepareDynOffsets();
-        //     return;
-        // }
-        // const isLowFrequency = frequency === DescUpdateFrequency.LOW;
-        const breakUpdate = this._isResourceChange() && !force;// this._hasIncludeDynamic() &&
+        const breakUpdate = this._isResourceChange() && !force;
         if (breakUpdate) return;
         this._isDirty = true;
         this._applyBindGroup();
-        // this._needUpdate = false;
-        // this._currBinds = binds;
-        // this._resetPrepareDynOffsets();
-        // this._prepareEntries.length = 0;
-        // if (!isLowFrequency) {
-        //     binds.forEach((bind: number) => {
-        //         const currBind = bind < 0 ? 0 : bind;
-        //         let currGrpEntry = this._bindGroupEntries.get(currBind)!;
-        //         if (!currGrpEntry && bind < 0) {
-        //             currGrpEntry = Array.from(this._bindGroupEntries.values())[0];
-        //         }
-        //         if (this._dynamicOffsets.includes(currGrpEntry.binding)) {
-        //             this._prepareDynOffsets.push(currGrpEntry.binding);
-        //             this._dynamicOffsetNum++;
-        //         }
-        //         this._prepareEntries.push(currGrpEntry);
-        //     });
-        // } else {
-        //     this._bindGroupEntries.forEach((val, currBind) => {
-        //         if (val.resource instanceof GPUTextureView) {
-        //             const currTex = this._textures[currBind] as WebGPUTexture;
-        //             const texFormat = FormatToWGPUFormatType(currTex.format);
-        //             if (layout.bindGrpLayoutEntries.get(currBind)?.texture?.sampleType !== texFormat) {
-        //                 layout.updateBindGroupLayout(layout.gpuDescriptorSetLayout!.bindings[currBind], null, currTex, null);
-        //             }
-        //         }
-        //         this._prepareEntries.push(val);
-        //         if (this._dynamicOffsets.includes(currBind)) {
-        //             this._prepareDynOffsets.push(currBind);
-        //             this._dynamicOffsetNum++;
-        //         }
-        //     });
-        // }
-        // layout.prepare(frequency, binds, vertBinds, fragBinds);
-        // this._createBindGroup();
     }
 
     private _createBindGroup (): void {
