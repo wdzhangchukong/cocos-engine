@@ -181,7 +181,7 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                     const descType = descriptors[i].type;
                     if ((descType & DescriptorType.SAMPLER) !== DescriptorType.SAMPLER) {
                         // texture
-                        let currTex = this._textures[i]!;
+                        let currTex = this._textures[i] as WebGPUTexture;
                         if (!currTex) {
                             if (binding.viewDimension === ViewDimension.TEXCUBE) {
                                 currTex = device.defaultResource.cubeTexture;
