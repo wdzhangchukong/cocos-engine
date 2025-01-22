@@ -29,7 +29,7 @@ import {
     DescriptorSetLayoutInfo,
     DESCRIPTOR_DYNAMIC_TYPE,
 } from '../base/define';
-import { DescUpdateFrequency, WebGPUDeviceManager, isBound } from './define';
+import { WebGPUDeviceManager } from './define';
 import { WebGPUTexture } from './webgpu-texture';
 import { DescriptorSet } from '../base/descriptor-set';
 import { WebGPUBuffer } from './webgpu-buffer';
@@ -68,7 +68,12 @@ export class WebGPUDescriptorSetLayout extends DescriptorSetLayout {
     }
     public initialize (info: Readonly<DescriptorSetLayoutInfo>): void {
         Array.prototype.push.apply(this._bindings, info.bindings);
-
+        const gfxDevice = WebGPUDeviceManager.instance;
+        // If the bindings are empty, it will cause the corresponding group to be generated as null,
+        // which will trigger a warning for the corresponding set being unbound.
+        if (!this._bindings.length) {
+            this._bindings.push(gfxDevice.defaultResource.setLayout.bindings[0]);
+        }
         let descriptorCount = 0; let maxBinding = -1;
         const flattenedIndices: number[] = [];
         const bindingSize = this._bindings.length;
@@ -103,7 +108,7 @@ export class WebGPUDescriptorSetLayout extends DescriptorSetLayout {
                 ),
             );
         });
-        const device = WebGPUDeviceManager.instance.nativeDevice!;
+        const device = gfxDevice.nativeDevice!;
         const groupLayout = device.createBindGroupLayout({
             entries: bindGrpLayoutEntries,
         });
@@ -115,61 +120,6 @@ export class WebGPUDescriptorSetLayout extends DescriptorSetLayout {
             entries: bindGrpLayoutEntries,
             bindGroupLayout: groupLayout,
         };
-    }
-
-    public removeRef (ref: DescriptorSet): void {
-        const index = this.references.indexOf(ref);
-        if (index !== -1) {
-            this.references.splice(index, 1);
-        }
-        if (this.references.length === 0) {
-            this.clear();
-        }
-    }
-
-    public addRef (ref: DescriptorSet): void {
-        if (!this.references.includes(ref)) {
-            this.references.push(ref);
-        }
-    }
-
-    public resetGroupLayout (): void {
-        if (this._gpuDescriptorSetLayout?.bindGroupLayout) {
-            this._gpuDescriptorSetLayout.bindGroupLayout = null;
-            this._hasChange = true;
-        }
-    }
-
-    public prepare (frequency: DescUpdateFrequency, binds: number[], vertBinds: number[] = [], fragBinds: number[] = []): void {
-        if (isBound(binds, this._currBinds) && frequency !== DescUpdateFrequency.LOW
-            && binds.length === this._prepareEntries.length) return;
-        this._currBinds = binds;
-        if (frequency !== DescUpdateFrequency.LOW) {
-            this._prepareEntries.length = 0;
-            binds.forEach((bind: number) => {
-                let currGrpEntryLayout = this._bindGrpLayoutEntries.get(bind < 0 ? 0 : bind)!;
-                if (!currGrpEntryLayout && bind < 0) {
-                    currGrpEntryLayout = Array.from(this._bindGrpLayoutEntries.values())[0];
-                }
-                if (vertBinds.includes(currGrpEntryLayout.binding) && !(currGrpEntryLayout.visibility & GPUShaderStage.VERTEX)) {
-                    currGrpEntryLayout.visibility |= GPUShaderStage.VERTEX;
-                } else if (!vertBinds.includes(currGrpEntryLayout.binding) && (currGrpEntryLayout.visibility & GPUShaderStage.VERTEX)) {
-                    currGrpEntryLayout.visibility ^= GPUShaderStage.VERTEX;
-                }
-                if (fragBinds.includes(currGrpEntryLayout.binding) && !(currGrpEntryLayout.visibility & GPUShaderStage.FRAGMENT)) {
-                    currGrpEntryLayout.visibility |= GPUShaderStage.FRAGMENT;
-                } else if (!fragBinds.includes(currGrpEntryLayout.binding) && (currGrpEntryLayout.visibility & GPUShaderStage.FRAGMENT)) {
-                    currGrpEntryLayout.visibility ^= GPUShaderStage.FRAGMENT;
-                }
-                this._prepareEntries.push(currGrpEntryLayout);
-            });
-        } else {
-            this._prepareEntries = Array.from(this._bindGrpLayoutEntries.values());
-        }
-        this._hasChange = true;
-        const nativeDevice = WebGPUDeviceManager.instance.nativeDevice;
-        const bindGrpLayout = nativeDevice?.createBindGroupLayout({ entries: this._prepareEntries });
-        this._gpuDescriptorSetLayout!.bindGroupLayout = bindGrpLayout!;
     }
 
     public clear (): void {

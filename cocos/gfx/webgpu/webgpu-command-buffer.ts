@@ -615,6 +615,7 @@ export class WebGPUCommandBuffer extends CommandBuffer {
         }
         const gpuPipelineLayout = this._curGPUPipelineState.gpuPipelineLayout as IWebGPUGPUPipelineLayout;
         const wgpuPipLayout = (currPipelineState?.pipelineLayout as WebGPUPipelineLayout);
+        const device = WebGPUDeviceManager.instance;
         for (let i = 0; i < groupSets.length; i++) {
             const currSetIdx = groupSets[i];
             const currDesc = descriptorSets[currSetIdx];
@@ -623,7 +624,7 @@ export class WebGPUCommandBuffer extends CommandBuffer {
             } else {
                 const currLayout = wgpuPipLayout.setLayouts[currSetIdx];
                 const currLayoutInfo = new DescriptorSetInfo(currLayout);
-                const newDescSet = WebGPUDeviceManager.instance.createDescriptorSet(currLayoutInfo) as WebGPUDescriptorSet;
+                const newDescSet = device.createDescriptorSet(currLayoutInfo) as WebGPUDescriptorSet;
                 descriptorSets[currSetIdx] = newDescSet;
                 newDescSet.prepare(true);
             }
@@ -666,8 +667,12 @@ export class WebGPUCommandBuffer extends CommandBuffer {
         const bgfunc = (passEncoder: GPURenderPassEncoder): void => {
             const gpuBindGroupSize = wgpuBindGroups.length;
             for (let i = 0; i < gpuBindGroupSize; i++) {
+                let currBindGroup = wgpuBindGroups[i];
+                if (!currBindGroup) {
+                    currBindGroup = (device.defaultResource.descSet as WebGPUDescriptorSet).gpuDescriptorSet.bindGroup;
+                }
                 // FIXME: this is a special sentence that 2 in 3 parameters I'm not certain.
-                passEncoder.setBindGroup(i, wgpuBindGroups[i], wgpuDynOffsets[i]);
+                passEncoder.setBindGroup(i, currBindGroup, wgpuDynOffsets[i]);
             }
         };
         this._renderPassFuncQueue.push(bgfunc);
