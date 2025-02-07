@@ -617,6 +617,9 @@ export function WebGPUCmdFuncCreateBuffer (device: WebGPUDevice, gpuBuffer: IWeb
     if (!(bufferUsage & GPUBufferUsage.COPY_DST)) {
         bufferUsage |= GPUBufferUsage.COPY_DST;
     }
+    if (!(bufferUsage & GPUBufferUsage.STORAGE)) {
+        bufferUsage |= GPUBufferUsage.STORAGE;
+    }
     bufferDesc.usage = bufferUsage;
     gpuBuffer.gpuTarget = bufferUsage;
     gpuBuffer.gpuBuffer = nativeDevice.createBuffer(bufferDesc);
