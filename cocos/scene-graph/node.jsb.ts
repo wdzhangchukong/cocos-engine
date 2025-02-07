@@ -25,10 +25,10 @@ import { cclegacy } from '../core/global-exports';
 import { errorID, getError } from '../core/platform/debug';
 import { Component } from './component';
 import { NodeEventType } from './node-event';
-import { CCObject } from '../core/data/object';
+import { CCObjectFlags } from '../core/data/object';
 import { NodeUIProperties } from './node-ui-properties';
 import { MobilityMode, NodeSpace, TransformBit } from './node-enum';
-import { Mat4, Quat, Vec3 } from '../core/math';
+import { IVec2Like, Mat4, Quat, Vec3 } from '../core/math';
 import { Layers } from './layers';
 import { editorExtrasTag, SerializationContext, SerializationOutput, serializeTag } from '../core/data';
 import { _tempFloatArray, fillMat4WithTempFloatArray } from './utils.jsb';
@@ -49,8 +49,9 @@ export const Node: typeof JsbNode = jsb.Node;
 export type Node = JsbNode;
 cclegacy.Node = Node;
 
-const NodeCls: any = Node;
+const tempVec3 = new Vec3();
 
+const NodeCls: any = Node;
 
 NodeCls.reserveContentsForAllSyncablePrefabTag = reserveContentsForAllSyncablePrefabTag;
 
@@ -84,7 +85,7 @@ const TRANSFORMBIT_TRS = TransformBit.TRS;
 const nodeProto: any = jsb.Node.prototype;
 export const TRANSFORM_ON = 1 << 0;
 const ACTIVE_ON = 1 << 1;
-const Destroying = CCObject.Flags.Destroying;
+const Destroying = CCObjectFlags.Destroying;
 
 // TODO: `_setTempFloatArray` is only implemented on Native platforms. @dumganhar
 // issue: https://github.com/cocos/cocos-engine/issues/14644
@@ -531,7 +532,7 @@ nodeProto._onPostActivated = function (active: boolean) {
         if (this._uiProps && this._uiProps.uiComp) {
             this._uiProps.uiComp.setNodeDirty();
             this._uiProps.uiComp.setTextureDirty(); // for dynamic atlas
-            this._uiProps.uiComp.markForUpdateRenderData();
+            this._uiProps.uiComp._markForUpdateRenderData();
         }
     }
 };
@@ -860,6 +861,39 @@ Object.defineProperty(nodeProto, 'position', {
     },
 });
 
+Object.defineProperty(nodeProto, 'x', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        return this._lpos.x;
+    },
+    set(v: number) {
+        this.setPosition(v, this._lpos.y, this._lpos.z);
+    },
+});
+
+Object.defineProperty(nodeProto, 'y', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        return this._lpos.y;
+    },
+    set(v: number) {
+        this.setPosition(this._lpos.x, v, this._lpos.z);
+    },
+});
+
+Object.defineProperty(nodeProto, 'z', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        return this._lpos.z;
+    },
+    set(v: number) {
+        this.setPosition(this._lpos.x, this._lpos.y, v);
+    },
+});
+
 Object.defineProperty(nodeProto, 'rotation', {
     configurable: true,
     enumerable: true,
@@ -890,6 +924,48 @@ Object.defineProperty(nodeProto, 'worldPosition', {
     },
     set(v: Readonly<Vec3>) {
         this.setWorldPosition(v as Vec3);
+    },
+});
+
+Object.defineProperty(nodeProto, 'worldPositionX', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        this.getWorldPosition(tempVec3);
+        return tempVec3.x;
+    },
+    set(v: number) {
+        this.getWorldPosition(tempVec3);
+        tempVec3.x = v;
+        this.setWorldPosition(tempVec3);
+    },
+});
+
+Object.defineProperty(nodeProto, 'worldPositionY', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        this.getWorldPosition(tempVec3);
+        return tempVec3.y;
+    },
+    set(v: number) {
+        this.getWorldPosition(tempVec3);
+        tempVec3.y = v;
+        this.setWorldPosition(tempVec3);
+    },
+});
+
+Object.defineProperty(nodeProto, 'worldPositionZ', {
+    configurable: true,
+    enumerable: true,
+    get(): number {
+        this.getWorldPosition(tempVec3);
+        return tempVec3.z;
+    },
+    set(v: number) {
+        this.getWorldPosition(tempVec3);
+        tempVec3.z = v;
+        this.setWorldPosition(tempVec3);
     },
 });
 
@@ -998,7 +1074,7 @@ Object.defineProperty(nodeProto, 'layer', {
         this._sharedUint32Arr[1] = v; // Uint32, 1: layer
         if (this._uiProps && this._uiProps.uiComp) {
             this._uiProps.uiComp.setNodeDirty();
-            this._uiProps.uiComp.markForUpdateRenderData();
+            this._uiProps.uiComp._markForUpdateRenderData();
         }
         this.emit(NodeEventType.LAYER_CHANGED, v);
     },
@@ -1104,6 +1180,17 @@ Object.defineProperty(nodeProto, '_static', {
     },
     set(v) {
         this._sharedUint8Arr[2] = (v ? 1 : 0);
+    },
+});
+
+Object.defineProperty(nodeProto, '_hasSkewComp', {
+    configurable: true,
+    enumerable: true,
+    get(): Readonly<Boolean> {
+        return this._sharedUint8Arr[3] != 0;
+    },
+    set(v) {
+        this._sharedUint8Arr[3] = (v ? 1 : 0);
     },
 });
 
@@ -1394,6 +1481,27 @@ nodeProto._onSiblingIndexChanged = function (index) {
         }
         this._eventProcessor.onUpdatingSiblingIndex();
     }
+};
+
+nodeProto._setSkew = function (v: IVec2Like): void {
+    this._sharedFloat32Arr[0] = v.x;
+    this._sharedFloat32Arr[1] = v.y;
+};
+
+nodeProto._getSkewX = function () {
+    return this._sharedFloat32Arr[0];
+};
+
+nodeProto._setSkewX = function (v: number) {
+    this._sharedFloat32Arr[0] = v;
+}
+
+nodeProto._getSkewY = function () {
+    return this._sharedFloat32Arr[1];
+};
+
+nodeProto._setSkewY = function (v: number) {
+    this._sharedFloat32Arr[1] = v;
 }
 
 //
@@ -1413,9 +1521,10 @@ nodeProto._ctor = function (name?: string) {
     this._sharedUint32Arr = new Uint32Array(sharedArrayBuffer, 0, 3);
     // Int32Array with 1 element: siblingIndex
     this._sharedInt32Arr = new Int32Array(sharedArrayBuffer, 12, 1);
-    // Uint8Array with 3 elements: activeInHierarchy, active, static
-    this._sharedUint8Arr = new Uint8Array(sharedArrayBuffer, 16, 3);
-    //
+    // Uint8Array with 4 elements: activeInHierarchy, active, static, _hasSkewComp
+    this._sharedUint8Arr = new Uint8Array(sharedArrayBuffer, 16, 4);
+    // Float32Array with 2 elements: skewX, skewY
+    this._sharedFloat32Arr = new Float32Array(sharedArrayBuffer, 20, 2);
 
     this._sharedUint32Arr[1] = Layers.Enum.DEFAULT; // this._sharedUint32Arr[1] is layer
     this._scene = null;

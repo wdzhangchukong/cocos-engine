@@ -31,7 +31,7 @@ import { TextureFilter, PixelFormat, WrapMode } from '../asset/assets/asset-enum
 import { Material } from '../asset/assets/material';
 import { RenderingSubMesh } from '../asset/assets/rendering-sub-mesh';
 import { Component } from '../scene-graph/component';
-import { CCObject, isValid } from '../core/data/object';
+import { CCObjectFlags, isValid } from '../core/data/object';
 import { director } from '../game/director';
 import { AttributeName, BufferUsageBit, Format, MemoryUsageBit, PrimitiveMode, Attribute, Buffer, BufferInfo, deviceManager, Texture } from '../gfx';
 import { clamp, Rect, Size, Vec2, Vec3, Vec4 } from '../core/math';
@@ -202,10 +202,12 @@ class TerrainRenderable extends ModelRenderer {
      * @deprecated since v3.5.0, this is an engine private interface that will be removed in the future.
      */
     public _currentMaterialLayers = 0;
+
     /**
      * @engineInternal
+     * @mangle
      */
-    public _lightmap: Texture2D|null = null;
+    public _lightmap: Texture2D | null = null;
 
     public destroy (): boolean {
         // this._invalidMaterial();
@@ -418,7 +420,7 @@ export class TerrainBlock {
 
         this._node = new Node('TerrainBlock');
         this._node.setParent(this._terrain.node);
-        this._node.hideFlags |= CCObject.Flags.DontSave | CCObject.Flags.HideInHierarchy;
+        this._node.hideFlags |= CCObjectFlags.DontSave | CCObjectFlags.HideInHierarchy;
         this._node.layer = this._terrain.node.layer;
 
         this._renderable = this._node.addComponent(TerrainRenderable);
@@ -663,6 +665,7 @@ export class TerrainBlock {
 
     /**
      * @engineInternal
+     * @mangle
      */
     public _updateLevel (camPos: Vec3): void {
         const maxLevel = TERRAIN_LOD_LEVELS - 1;

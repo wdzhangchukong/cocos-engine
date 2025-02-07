@@ -878,7 +878,7 @@ export class ParticleSystem extends ModelRenderer {
     /**
      * @deprecated since v3.5.0, this is an engine private interface that will be removed in the future.
      */
-    public _onRebuildPSO (index: number, material: Material): void {
+    public override _onRebuildPSO (index: number, material: Material): void {
         this.processor.onRebuildPSO(index, material);
     }
 
@@ -903,6 +903,7 @@ export class ParticleSystem extends ModelRenderer {
 
     /**
      * @engineInternal
+     * @mangle
      */
     public _detachFromScene (): void {
         this.processor.detachFromScene();
@@ -1332,7 +1333,11 @@ export class ParticleSystem extends ModelRenderer {
         }
     }
 
-    private emit (count: number, dt: number): void {
+    /**
+     * @engineInternal
+     * emit is used in burst.ts, so it should be public and marked as engine internal.
+     */
+    public emit (count: number, dt: number): void {
         const self = this;
         const node = self.node;
         const loopDelta = (self._time % self.duration) / self.duration; // loop delta value

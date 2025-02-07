@@ -764,7 +764,7 @@ export class UITransform extends Component {
     private _markRenderDataDirty (): void {
         const uiComp = this.node._uiProps.uiComp;
         if (uiComp) {
-            uiComp.markForUpdateRenderData();
+            uiComp._markForUpdateRenderData();
         }
     }
 
@@ -786,7 +786,7 @@ export class UITransform extends Component {
                 const ca = aComp ? aComp._priority : 0;
                 const cb = bComp ? bComp._priority : 0;
                 const diff = ca - cb;
-                if (diff === 0) return a.getSiblingIndex() - b.getSiblingIndex();
+                if (diff === 0) return a.siblingIndex - b.siblingIndex;
                 return diff;
             });
         }
@@ -795,6 +795,7 @@ export class UITransform extends Component {
     /**
      * @deprecated Since v3.7.0, this is an engine private interface that will be removed in the future.
      * @engineInternal
+     * @mangle
      */
     public static _sortSiblings (): void {
         UITransform.priorityChangeNodeMap.forEach((node, ID): void => {
@@ -808,6 +809,7 @@ export class UITransform extends Component {
     /**
      * @deprecated Since v3.7.0, this is an engine private interface that will be removed in the future.
      * @engineInternal
+     * @mangle
      */
     public static _cleanChangeMap (): void {
         UITransform.priorityChangeNodeMap.clear();

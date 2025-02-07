@@ -256,7 +256,7 @@ export class Pass {
     public getBinding (name: string): number {
         const handle = this.getHandle(name);
         if (!handle) { return -1; }
-        return Pass.getBindingFromHandle(handle);
+        return getBindingFromHandle(handle);
     }
 
     /**
@@ -266,9 +266,9 @@ export class Pass {
      * @param value New value
      */
     public setUniform (handle: number, value: MaterialProperty): void {
-        const binding = Pass.getBindingFromHandle(handle);
-        const type = Pass.getTypeFromHandle(handle);
-        const ofs = Pass.getOffsetFromHandle(handle);
+        const binding = getBindingFromHandle(handle);
+        const type = getTypeFromHandle(handle);
+        const ofs = getOffsetFromHandle(handle);
         const block = this._getBlockView(type, binding);
         if (DEBUG) {
             const validator = type2validator[type];
@@ -285,9 +285,9 @@ export class Pass {
      * @param out The output property to store the result
      */
     public getUniform<T extends MaterialProperty> (handle: number, out: T): T {
-        const binding = Pass.getBindingFromHandle(handle);
-        const type = Pass.getTypeFromHandle(handle);
-        const ofs = Pass.getOffsetFromHandle(handle);
+        const binding = getBindingFromHandle(handle);
+        const type = getTypeFromHandle(handle);
+        const ofs = getOffsetFromHandle(handle);
         const block = this._getBlockView(type, binding);
         return type2reader[type](block, out, ofs) as T;
     }
@@ -299,11 +299,11 @@ export class Pass {
      * @param value New value
      */
     public setUniformArray (handle: number, value: MaterialProperty[]): void {
-        const binding = Pass.getBindingFromHandle(handle);
-        const type = Pass.getTypeFromHandle(handle);
+        const binding = getBindingFromHandle(handle);
+        const type = getTypeFromHandle(handle);
         const stride = GetTypeSize(type) >> 2;
         const block = this._getBlockView(type, binding);
-        let ofs = Pass.getOffsetFromHandle(handle);
+        let ofs = getOffsetFromHandle(handle);
         for (let i = 0; i < value.length; i++, ofs += stride) {
             if (value[i] === null) { continue; }
             type2writer[type](block, value[i], ofs);
@@ -312,7 +312,7 @@ export class Pass {
     }
 
     /**
-     * @en Bind a GFX [[gfx.Texture]] the the given uniform binding
+     * @en Bind a GFX [[gfx.Texture]] the given uniform binding
      * @zh 绑定实际 GFX [[gfx.Texture]] 到指定 binding。
      * @param binding The binding for target uniform of texture type
      * @param value Target texture
@@ -322,7 +322,7 @@ export class Pass {
     }
 
     /**
-     * @en Bind a GFX [[gfx.Sampler]] the the given uniform binding
+     * @en Bind a GFX [[gfx.Sampler]] the given uniform binding
      * @zh 绑定实际 GFX [[gfx.Sampler]] 到指定 binding。
      * @param binding The binding for target uniform of sampler type
      * @param value Target sampler
@@ -408,10 +408,10 @@ export class Pass {
     public resetUniform (name: string): void {
         const handle = this.getHandle(name);
         if (!handle) { return; }
-        const type = Pass.getTypeFromHandle(handle);
-        const binding = Pass.getBindingFromHandle(handle);
-        const ofs = Pass.getOffsetFromHandle(handle);
-        const count = Pass.getCountFromHandle(handle);
+        const type = getTypeFromHandle(handle);
+        const binding = getBindingFromHandle(handle);
+        const ofs = getOffsetFromHandle(handle);
+        const count = getCountFromHandle(handle);
         const block = this._getBlockView(type, binding);
         const info = this._properties[name];
         const givenDefault = info && info.value;
@@ -428,8 +428,8 @@ export class Pass {
     public resetTexture (name: string, index?: number): void {
         const handle = this.getHandle(name);
         if (!handle) { return; }
-        const type = Pass.getTypeFromHandle(handle);
-        const binding = Pass.getBindingFromHandle(handle);
+        const type = getTypeFromHandle(handle);
+        const binding = getBindingFromHandle(handle);
         const info = this._properties[name];
         const value = info && info.value;
         let textureBase: TextureBase;
@@ -601,7 +601,8 @@ export class Pass {
     protected _doInit (info: IPassInfoFull, copyDefines = false): void {
         this._priority = RenderPriority.DEFAULT;
         this._stage = RenderPassStage.DEFAULT;
-        if (cclegacy.rendering && cclegacy.rendering.enableEffectImport) {
+        const enableEffectImport: boolean = cclegacy.rendering?.enableEffectImport;
+        if (enableEffectImport) {
             const r = cclegacy.rendering;
             if (typeof info.phase === 'number') {
                 this._passID = (info as Pass)._passID;
@@ -647,7 +648,7 @@ export class Pass {
         this._propertyIndex = info.propertyIndex !== undefined ? info.propertyIndex : info.passIndex;
         this._programName = info.program;
         this._defines = copyDefines ? ({ ...info.defines }) : info.defines;
-        if (cclegacy.rendering && cclegacy.rendering.enableEffectImport) {
+        if (enableEffectImport) {
             this._shaderInfo = (cclegacy.rendering.programLib as ProgramLibrary)
                 .getProgramInfo(this._phaseID, this._programName);
         } else {
@@ -661,7 +662,7 @@ export class Pass {
         if (info.stateOverrides) { Pass.fillPipelineInfo(this, info.stateOverrides); }
 
         // init descriptor set
-        if (cclegacy.rendering && cclegacy.rendering.enableEffectImport) {
+        if (enableEffectImport) {
             _dsInfo.layout = (cclegacy.rendering.programLib as ProgramLibrary)
                 .getMaterialDescriptorSetLayout(this._device, this._phaseID, info.program);
         } else {
@@ -673,7 +674,7 @@ export class Pass {
         const blocks = this._shaderInfo.blocks;
         let blockSizes: number[];
         let handleMap: Record<string, number>;
-        if (cclegacy.rendering && cclegacy.rendering.enableEffectImport) {
+        if (enableEffectImport) {
             const programLib = (cclegacy.rendering.programLib as ProgramLibrary);
             blockSizes = programLib.getBlockSizes(this._phaseID, this._programName);
             handleMap = programLib.getHandleMap(this._phaseID, this._programName);
@@ -684,7 +685,7 @@ export class Pass {
         }
 
         // build uniform blocks
-        if (cclegacy.rendering && cclegacy.rendering.enableEffectImport) {
+        if (enableEffectImport) {
             const programLib = (cclegacy.rendering.programLib as ProgramLibrary);
             const shaderInfo = programLib.getShaderInfo(this._phaseID, this.program);
             this._buildMaterialUniformBlocks(device, shaderInfo.blocks, blockSizes);
@@ -808,6 +809,7 @@ export class Pass {
 
     /**
      * @engineInternal
+     * @mangle
      * Only for UI
      */
     public _initPassFromTarget (target: Pass, dss: DepthStencilState, hashFactor: number): void {
@@ -848,6 +850,7 @@ export class Pass {
     // Only for UI
     /**
      * @engineInternal
+     * @mangle
      */
     public _updatePassHash (): void {
         this._hash = Pass.getPassHash(this);
@@ -877,6 +880,7 @@ export class Pass {
     get rootBufferDirty (): boolean { return this._rootBufferDirty; }
     /**
      * @engineInternal
+     * @mangle
      * Currently, can not just mark setter as engine internal, so change to a function.
      */
     setRootBufferDirty (val: boolean): void { this._rootBufferDirty = val; }
@@ -884,6 +888,7 @@ export class Pass {
     get priority (): RenderPriority { return this._priority; }
     /**
      * @engineInternal
+     * @mangle
      * Currently, can not just mark setter as engine internal, so change to a function.
      */
     setPriority (val: RenderPriority): void { this._priority = val; }
