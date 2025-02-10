@@ -591,7 +591,6 @@ export class WebGPUDevice extends Device {
             BufferFlagBit.NONE,
         );
         const defaultDescBuffResc = this.createBuffer(bufferInfo);
-
         const samplerInfo = new SamplerInfo();
         const defaultDescSmplResc = this.getSampler(samplerInfo);
         const defaultResource = this.defaultResource;

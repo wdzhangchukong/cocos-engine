@@ -36,6 +36,7 @@ import {
     DescriptorType,
     Filter,
     ViewDimension,
+    DESCRIPTOR_STORAGE_BUFFER_TYPE,
 } from '../base/define';
 import { WebGPUDeviceManager } from './define';
 import { FormatToWGPUFormatType, SEPARATE_SAMPLER_BINDING_OFFSET } from './webgpu-commands';
@@ -171,14 +172,19 @@ export class WebGPUDescriptorSet extends DescriptorSet {
             for (let i = 0; i < descCount; ++i) {
                 const binding = bindings[i];
                 const bindIdx = binding.binding;
-                if (descriptors[i].type & DESCRIPTOR_BUFFER_TYPE) {
-                    const buffer = (this._buffers[i] || device.defaultResource.buffer) as WebGPUBuffer;
+                const descType = descriptors[i].type;
+                if (descType & DESCRIPTOR_BUFFER_TYPE) {
+                    const defaultBuffer = device.defaultResource.buffer;
+                    let buffer = (this._buffers[i] || defaultBuffer) as WebGPUBuffer;
+                    if (buffer === defaultBuffer
+                        && (descType & DESCRIPTOR_STORAGE_BUFFER_TYPE)) {
+                        buffer =  device.defaultResource.storageBuffer;
+                    }
                     this._bindBufferEntry(binding, buffer);
-                    if (descriptors[i].type & (DescriptorType.DYNAMIC_STORAGE_BUFFER | DescriptorType.DYNAMIC_UNIFORM_BUFFER)) {
+                    if (descType & (DescriptorType.DYNAMIC_STORAGE_BUFFER | DescriptorType.DYNAMIC_UNIFORM_BUFFER)) {
                         this._dynamicOffsets.push(bindIdx);
                     }
-                } else if (descriptors[i].type & DESCRIPTOR_SAMPLER_TYPE) {
-                    const descType = descriptors[i].type;
+                } else if (descType & DESCRIPTOR_SAMPLER_TYPE) {
                     if ((descType & DescriptorType.SAMPLER) !== DescriptorType.SAMPLER) {
                         // texture
                         let currTex = this._textures[i] as WebGPUTexture;

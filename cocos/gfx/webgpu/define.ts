@@ -22,6 +22,7 @@
  THE SOFTWARE.
 */
 
+import { BufferFlagBit, BufferInfo, BufferUsageBit, MemoryUsageBit } from '../base/define';
 import { DescriptorSet } from '../base/descriptor-set';
 import { DescriptorSetLayout } from '../base/descriptor-set-layout';
 import { WebGPUBuffer } from './webgpu-buffer';
@@ -69,6 +70,17 @@ export class DefaultResources {
     sampler!: WebGPUSampler;
     setLayout!: DescriptorSetLayout;
     descSet!: DescriptorSet;
+    get storageBuffer (): WebGPUBuffer {
+        const bufferInfo = new BufferInfo(
+            BufferUsageBit.STORAGE,
+            MemoryUsageBit.DEVICE,
+            16,
+            16, // in bytes
+            BufferFlagBit.NONE,
+        );
+        const defaultBuff = WebGPUDeviceManager.instance.createBuffer(bufferInfo);
+        return defaultBuff as WebGPUBuffer;
+    }
 }
 
 export function isBound (binds: number[], compares: number[]): boolean {
