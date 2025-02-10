@@ -65,12 +65,16 @@ export class DefaultResources {
     texturesDescLayout: Map<number, WebGPUTexture> = new Map<number, WebGPUTexture>();
     samplersDescLayout: Map<number, WebGPUSampler> = new Map<number, WebGPUSampler>();
     buffer!: WebGPUBuffer;
+    storageBuffers: WebGPUBuffer[] = [];
     texture!: WebGPUTexture;
     cubeTexture!: WebGPUTexture;
     sampler!: WebGPUSampler;
     setLayout!: DescriptorSetLayout;
     descSet!: DescriptorSet;
-    get storageBuffer (): WebGPUBuffer {
+    getStorageBuffer (idx: number): WebGPUBuffer {
+        if (this.storageBuffers[idx]) {
+            return this.storageBuffers[idx];
+        }
         const bufferInfo = new BufferInfo(
             BufferUsageBit.STORAGE,
             MemoryUsageBit.DEVICE,
@@ -78,8 +82,9 @@ export class DefaultResources {
             16, // in bytes
             BufferFlagBit.NONE,
         );
-        const defaultBuff = WebGPUDeviceManager.instance.createBuffer(bufferInfo);
-        return defaultBuff as WebGPUBuffer;
+        const defaultBuff = WebGPUDeviceManager.instance.createBuffer(bufferInfo) as WebGPUBuffer;
+        this.storageBuffers[idx] = defaultBuff;
+        return defaultBuff;
     }
 }
 

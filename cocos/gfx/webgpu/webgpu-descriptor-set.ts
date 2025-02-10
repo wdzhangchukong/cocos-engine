@@ -178,7 +178,7 @@ export class WebGPUDescriptorSet extends DescriptorSet {
                     let buffer = (this._buffers[i] || defaultBuffer) as WebGPUBuffer;
                     if (buffer === defaultBuffer
                         && (descType & DESCRIPTOR_STORAGE_BUFFER_TYPE)) {
-                        buffer =  device.defaultResource.storageBuffer;
+                        buffer =  device.defaultResource.getStorageBuffer(bindIdx);
                     }
                     this._bindBufferEntry(binding, buffer);
                     if (descType & (DescriptorType.DYNAMIC_STORAGE_BUFFER | DescriptorType.DYNAMIC_UNIFORM_BUFFER)) {
