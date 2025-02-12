@@ -41,6 +41,12 @@
 
 namespace cc {
 
+enum class SkewType : uint8_t {
+    NONE = 0,
+    STANDARD = 1,
+    ROTATIONAL = 2,
+};
+
 class Scene;
 /**
  * Event types emitted by Node
@@ -130,8 +136,8 @@ public:
     static void resetChangedFlags();
     static void clearNodeArray();
     
-    static void _incSkewCompCount();
-    static void _decSkewCompCount();
+    static void _incSkewCompCount(); // NOLINT
+    static void _decSkewCompCount(); // NOLINT
 
     Node();
     explicit Node(const ccstd::string &name);
@@ -623,7 +629,7 @@ private:
 
     void inverseTransformPointRecursive(Vec3 &out) const;
     void updateWorldTransformRecursive(uint32_t &superDirtyBits);
-    void updateLocalMatrixBySkew(Mat4 *outLocalMatrix);
+    void updateLocalMatrixBySkew(Mat4 *outLocalMatrix) const;
 
     inline void notifyLocalPositionUpdated() {
         emit<LocalPositionUpdated>(_localPosition.x, _localPosition.y, _localPosition.z);
@@ -682,7 +688,7 @@ private:
     uint8_t _activeInHierarchy{0};                                      // Uint8: 0
     uint8_t _active{1};                                                 // Uint8: 1
     uint8_t _isStatic{0};                                               // Uint8: 2
-    uint8_t _hasSkewComp{0};                                            // Uint8: 3
+    uint8_t _skewType{static_cast<uint8_t>(SkewType::NONE)};            // Uint8: 3
     float _skewX{.0F};                                                  // Float32: 0
     float _skewY{.0F};                                                  // Float32: 1
 
