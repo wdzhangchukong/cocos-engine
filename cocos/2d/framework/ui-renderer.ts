@@ -419,8 +419,9 @@ export class UIRenderer extends Renderer {
      * @deprecated Since v3.7.0, this is an engine private interface that will be removed in the future.
      */
     public updateRenderer (): void {
-        if (this._assembler) {
-            this._assembler.updateRenderData(this);
+        const assembler = this._assembler;
+        if (assembler && assembler.updateRenderData) {
+            assembler.updateRenderData(this);
         }
         this._renderFlag = this._canRender();
         this._renderEntity.enabled = this._renderFlag;
@@ -471,8 +472,11 @@ export class UIRenderer extends Renderer {
     }
 
     /**
+     * cocos-test-projects/assets/cases/rendertexture depends on this method, so it should not be marked as `@mangle` now.
+     * FIXME(cjh): `protected` is not equal to `@engineInternal + public`, because `protected` methods are also APIs exposed to developers,
+     * For example, developers could implement a class which extends `UIRenderer` and call this method.
+     * The mistake was merged in https://github.com/cocos/cocos-engine/pull/14572 , and it needs to be fixed in the future.
      * @engineInternal
-     * @mangle
      */
     public updateMaterial (): void {
         if (this._customMaterial) {
@@ -495,8 +499,11 @@ export class UIRenderer extends Renderer {
         this.setEntityColor(this._color);
         this.setEntityOpacity(this.node._uiProps.localOpacity);
 
-        if (this._assembler) {
-            this._assembler.updateColor(this);
+        const assembler = this._assembler;
+        if (assembler) {
+            if (assembler.updateColor) {
+                assembler.updateColor(this);
+            }
             // Need update rendFlag when opacity changes from 0 to !0 or 0 to !0
             const renderFlag = this._renderFlag;
             this._renderFlag = this._canRender();
