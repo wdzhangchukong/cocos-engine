@@ -760,7 +760,6 @@ class DeviceRenderPass implements RecordingInterface {
         let depthTex: Texture | null = null;
         let swapchain: Swapchain | null = null;
         let framebuffer: Framebuffer | null = null;
-        this._processRenderLayout(rasterPass);
         for (const [resName, rasterV] of rasterPass.rasterViews) {
             let resTex = context.deviceTextures.get(resName);
             if (!resTex) {
@@ -970,6 +969,10 @@ class DeviceRenderPass implements RecordingInterface {
         }
     }
 
+    public processRenderLayout (): void {
+        this._processRenderLayout(this._rasterPass);
+    }
+
     private _createFramebuffer (fbo: Framebuffer | null, cols: Texture[], depthTex: Texture | null): void {
         if (!fbo && !cols.length) return;
         if (this._framebuffer && fbo !== this._framebuffer) this._framebuffer.destroy();
@@ -992,7 +995,6 @@ class DeviceRenderPass implements RecordingInterface {
         const currFramebuffer = this._framebuffer;
         const currFBDepthTex = currFramebuffer?.depthStencilTexture ?? null;
         let depTexture = currFramebuffer ? currFBDepthTex : null;
-        this._processRenderLayout(pass);
         const currentWidth = currFramebuffer?.width ?? 0;
         const currentHeight = currFramebuffer?.height ?? 0;
 
@@ -1232,6 +1234,7 @@ class DeviceRenderScene implements RecordingInterface {
         this._updateGlobal(queueRenderData, sceneId);
         const sceneRenderData = context.renderGraph.getData(sceneId)!;
         if (sceneRenderData) this._updateGlobal(sceneRenderData, sceneId);
+        devicePass.processRenderLayout();
         context.passDescriptorSet?.update();
         this._currentQueue.isUpdateUBO = true;
     }

@@ -358,14 +358,14 @@ export function GFXTextureUsageToNative (usage: TextureUsageBit): GPUTextureUsag
         // The default value is TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
         // An error will be thrown saying "Destination texture needs to have CopyDst and RenderAttachment usage."
         // if you use GPUTextureUsage.COPY_DST without GPUTextureUsage.RENDER_ATTACHMENT.
-        nativeUsage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT;
+        nativeUsage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT;
     }
 
-    if (!(nativeUsage & GPUTextureUsage.COPY_DST)) {
-        nativeUsage |= GPUTextureUsage.COPY_DST;
-    }
+    // if (!(nativeUsage & GPUTextureUsage.COPY_DST)) {
+    //     nativeUsage |= GPUTextureUsage.COPY_DST;
+    // }
 
-    if ((nativeUsage & (GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST))
+    if ((nativeUsage & GPUTextureUsage.TEXTURE_BINDING)
     && !(nativeUsage & (GPUTextureUsage.RENDER_ATTACHMENT))) {
         nativeUsage |= GPUTextureUsage.RENDER_ATTACHMENT;
     }
@@ -680,6 +680,9 @@ export function WebGPUCmdFuncUpdateBuffer (
 }
 
 export function WebGPUCmdFuncCreateTexture (device: WebGPUDevice, gpuTexture: IWebGPUTexture): void {
+    if (gpuTexture.width === 512 && gpuTexture.height === 512 && gpuTexture.format === Format.R32F) {
+        console.log('WebGPUCmdFuncCreateTexture shadowmap');
+    }
     // dimension optional
     gpuTexture.gpuTarget = GFXTextureToWebGPUTexture(gpuTexture.type);
     gpuTexture.gpuInternalFmt = GFXFormatToWGPUTextureFormat(gpuTexture.format);

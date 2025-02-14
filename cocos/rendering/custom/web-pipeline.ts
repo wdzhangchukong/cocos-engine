@@ -830,9 +830,9 @@ export class WebPipeline implements BasicPipeline {
     constructor (layoutGraph: LayoutGraphData) {
         this._layoutGraph = layoutGraph;
     }
-    globalDSManager: GlobalDSManager;
-    descriptorSetLayout: DescriptorSetLayout;
-    descriptorSet: DescriptorSet;
+    globalDSManager!: GlobalDSManager;
+    descriptorSetLayout!: DescriptorSetLayout;
+    descriptorSet!: DescriptorSet;
     get type (): PipelineType {
         return PipelineType.BASIC;
     }
