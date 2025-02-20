@@ -58,6 +58,27 @@ export function hashCombineStr (str: string, currHash: number): number {
     return hashCombine(hash, currHash);
 }
 
+interface WebGPU {
+    glslang: any;
+    twgsl: any;
+}
+
+export const webGPU: WebGPU = {
+    glslang: undefined,
+    twgsl: undefined,
+};
+function overrideClass (wasm): void {
+    if ('compileGLSL' in wasm) {
+        webGPU.glslang = wasm;
+    } else if ('convertSpirV2WGSL' in wasm) {
+        webGPU.twgsl = wasm;
+    }
+}
+
+export function overrideWebGPUDefine (wasm): void {
+    overrideClass(wasm);
+}
+
 export class DefaultResources {
     // hash, targetResource
     buffersDescLayout: Map<number, WebGPUBuffer> = new Map<number, WebGPUBuffer>();
