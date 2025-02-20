@@ -22,11 +22,8 @@
  THE SOFTWARE.
 */
 
-import { fetchUrl } from 'pal/wasm';
-import glslangUrl from 'external:emscripten/webgpu/glslang.wasm';
-import twgslUrl from 'external:emscripten/webgpu/twgsl.wasm';
-import glslangLoader from 'external:emscripten/webgpu/glslang.js';
-import twgslLoader from 'external:emscripten/webgpu/twgsl.js';
+import { instantiateWasm, ensureWasmModuleReady } from 'pal/wasm';
+import { error } from '../../core';
 import { DescriptorSet } from '../base/descriptor-set';
 import { Buffer } from '../base/buffer';
 import { CommandBuffer } from '../base/command-buffer';
@@ -493,8 +490,55 @@ export class WebGPUDevice extends Device {
             requiredFeatures: submitFeatures,
         });
 
-        this._glslang = await glslangLoader(await fetchUrl(glslangUrl));
-        this._twgsl = await twgslLoader(await fetchUrl(twgslUrl));
+        console.error("---->000");
+        function initWasm(wasmFactory, wasmUrl: string): Promise<any> {
+            console.error("---->111: " + wasmUrl);
+            return new Promise<void>((resolve, reject) => {
+                const errorMessage = (err: any): string => `[WebGPU]: WebGPU wasm load failed: ${err}`;
+                console.error("---->222: " + typeof wasmFactory);
+                wasmFactory({
+                    instantiateWasm (
+                        importObject: WebAssembly.Imports,
+                        receiveInstance: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+                    ) {
+                        // NOTE: the Promise return by instantiateWasm hook can't be caught.
+                        instantiateWasm(wasmUrl, importObject).then((result) => {
+                            receiveInstance(result.instance, result.module);
+                        }).catch((err) => reject(errorMessage(err)));
+                    },
+                }).then((Instance: any) => {
+                    resolve(Instance);
+                }).catch((err: any) => reject(errorMessage(err)));
+            });
+        }
+
+        const errorReport = (msg: any): void => { error(msg); };
+        await ensureWasmModuleReady().then(() => {
+            return Promise.all([
+                import('external:emscripten/webgpu/glslang.wasm'),
+                import('external:emscripten/webgpu/glslang.js'),
+                import('external:emscripten/webgpu/twgsl.wasm'),
+                import('external:emscripten/webgpu/twgsl.js'),
+            ]).then(([
+                { default: glslangUrl },
+                { default: glslangFactory },
+                { default: twgslUrl },
+                { default: twgslFactory },
+            ]) => {
+                Promise.all([
+                    initWasm(glslangFactory, glslangUrl).then((instance: any) => {
+                        console.error("---->111");
+                        this._glslang = instance;
+                    }),
+                    initWasm(twgslFactory, twgslUrl).then((instance: any) => {
+                        console.error("---->222");
+                        this._twgsl = instance;
+                    }),
+                ])
+            });
+        }).catch(errorReport);
+        // this._glslang = await glslangLoader(await fetchUrl(glslangUrl));
+        // this._twgsl = await twgslLoader(await fetchUrl(twgslUrl));
 
         this._gfxAPI = API.WEBGPU;
         this._swapchainFormat = WGPUFormatToGFXFormat(navigator.gpu.getPreferredCanvasFormat());
