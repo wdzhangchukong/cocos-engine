@@ -55,6 +55,10 @@ export class WebGPUDescriptorSet extends DescriptorSet {
     private _dynamicOffsets: number[] = [];
     private _dynamicOffsetNum: number = 0;
 
+    get dynamicOffsets (): number[] {
+        return this._dynamicOffsets;
+    }
+
     get dynamicOffsetCount (): number {
         return this._dynamicOffsets.length;
     }

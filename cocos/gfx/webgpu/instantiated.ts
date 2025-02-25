@@ -112,8 +112,7 @@ export async function waitForWebGPUWasmInstantiation (): Promise<void> {
             const glslWasmUrl = glslWasmModule.default;
             const twgslFactory = twgslModule.default;
             const twgslWasmUrl = twgslWasmModule.default;
-            await initWasm(glslFactory, glslWasmUrl);
-            await initWasm(twgslFactory, twgslWasmUrl);
+            await Promise.all([initWasm(glslFactory, glslWasmUrl), initWasm(twgslFactory, twgslWasmUrl)]);
         } else {
             throw new Error('Wasm module is not supported in this environment.');
         }

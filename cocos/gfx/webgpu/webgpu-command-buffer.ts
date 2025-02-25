@@ -305,7 +305,7 @@ export class WebGPUCommandBuffer extends CommandBuffer {
             descriptorSets[set] = descriptorSet as WebGPUDescriptorSet;
             this._isStateValid = true;
         }
-        if (dynamicOffsets) {
+        if (dynamicOffsets && dynamicOffsets.length) {
             const offsets = this._curDynamicOffsets[set];
             const dynamicOffsetSize = dynamicOffsets.length;
             for (let i = 0; i < dynamicOffsetSize; i++) offsets[i] = dynamicOffsets[i];
@@ -649,16 +649,24 @@ export class WebGPUCommandBuffer extends CommandBuffer {
         const wgpuDynOffsets = new Array<number[]>(currGPUDescSize);
         for (let i = 0; i < currGPUDescSize; i++) {
             const currSetIdx = groupSets[i];
-            const curGpuDesc = descriptorSets[currSetIdx].gpuDescriptorSet;
+            const descObj = descriptorSets[currSetIdx];
+            const curGpuDesc = descObj.gpuDescriptorSet;
             wgpuBindGroups[currSetIdx] = curGpuDesc.bindGroup;
             wgpuDynOffsets[currSetIdx] = [...this._curDynamicOffsets[currSetIdx]];
-            if (!descriptorSets[currSetIdx].dynamicOffsetCount) {
+            if (!descObj.dynamicOffsetCount) {
                 wgpuDynOffsets[currSetIdx] = [];
-            } else if (descriptorSets[currSetIdx] && descriptorSets[currSetIdx].dynamicOffsetCount !== wgpuDynOffsets[currSetIdx].length) {
-                wgpuDynOffsets[currSetIdx].length = descriptorSets[currSetIdx].dynamicOffsetCount;
-                for (let j = 0; j < descriptorSets[currSetIdx].dynamicOffsetCount; j++) {
-                    if (!wgpuDynOffsets[currSetIdx][j]) {
+            } else if (descObj && descObj.dynamicOffsetCount !== wgpuDynOffsets[currSetIdx].length) {
+                wgpuDynOffsets[currSetIdx].length = descObj.dynamicOffsetCount;
+                for (let j = 0; j < descObj.dynamicOffsetCount; j++) {
+                    const currOffset = wgpuDynOffsets[currSetIdx][j];
+                    if (!currOffset) {
                         wgpuDynOffsets[currSetIdx][j] = 0;
+                    } else {
+                        const currBind = descObj.dynamicOffsets[j];
+                        const bindObj = descObj.gpuDescriptorSet.gpuDescriptors[currBind];
+                        if (bindObj && bindObj.gpuBuffer && currOffset > bindObj.gpuBuffer.gpuBuffer!.size) {
+                            wgpuDynOffsets[currSetIdx][j] = 0;
+                        }
                     }
                 }
             }
