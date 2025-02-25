@@ -60,10 +60,14 @@ export const promiseForWebGPUInstantiation = (() => {
     if (WEBGPU && NATIVE_CODE_BUNDLE_MODE !== NativeCodeBundleMode.ASMJS) {
         // TODO: we need to support AsmJS fallback option
         return Promise.all([
-            glslangLoader(new URL(glslangUrl, import.meta.url).href).then((res) => {
+            glslangLoader({
+                wasmPath: new URL(glslangUrl, import.meta.url).href
+            }).then((res) => {
                 glslangWasmModule.glslang = res;
             }),
-            twgslLoader(new URL(twgslUrl, import.meta.url).href).then((data) => {
+            twgslLoader({
+                wasmPath: new URL(twgslUrl, import.meta.url).href
+            }).then((data) => {
                 twgslModule.twgsl = data;
             }),
             new Promise<void>((resolve) => {
